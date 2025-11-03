@@ -28,12 +28,43 @@ document.addEventListener("DOMContentLoaded", () => {
           ${details.participants.length > 0 ? `
             <p><strong>Current Participants:</strong></p>
             <ul class="participants-list">
-              ${details.participants.map(email => `<li>${email}</li>`).join('')}
+              ${details.participants.map(email => `
+                <li style="list-style-type:none;display:flex;align-items:center;gap:8px;">
+                  <span>${email}</span>
+                  <button class="delete-participant" title="Удалить" data-activity="${name}" data-email="${email}" style="background:none;border:none;cursor:pointer;padding:0;">
+                    <span style="color:#d00;font-size:18px;">&#128465;</span>
+                  </button>
+                </li>
+              `).join('')}
             </ul>
           ` : ''}
         `;
 
+
         activitiesList.appendChild(activityCard);
+
+        // Добавить обработчик удаления участника
+        activityCard.querySelectorAll('.delete-participant').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const activityName = btn.getAttribute('data-activity');
+            const email = btn.getAttribute('data-email');
+            if (confirm(`Удалить участника ${email}?`)) {
+              try {
+                const response = await fetch(`/activities/${encodeURIComponent(activityName)}/participant?email=${encodeURIComponent(email)}`, {
+                  method: 'DELETE',
+                });
+                const result = await response.json();
+                if (response.ok) {
+                  fetchActivities();
+                } else {
+                  alert(result.detail || 'Ошибка удаления участника');
+                }
+              } catch (err) {
+                alert('Ошибка удаления участника');
+              }
+            }
+          });
+        });
 
         // Add option to select dropdown
         const option = document.createElement("option");
@@ -65,9 +96,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await response.json();
 
       if (response.ok) {
-        messageDiv.textContent = result.message;
-        messageDiv.className = "success";
-        signupForm.reset();
+  messageDiv.textContent = result.message;
+  messageDiv.className = "success";
+  signupForm.reset();
+  fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
